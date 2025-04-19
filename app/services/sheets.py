@@ -1,13 +1,10 @@
 import gspread
 from google.oauth2.service_account import Credentials
 from app.config import settings
-
+from google.auth import default  # ✅ use default GCP credentials
 
 def get_sheets_client():
-    creds = Credentials.from_service_account_file(
-        settings.GOOGLE_APPLICATION_CREDENTIALS,
-        scopes=["https://www.googleapis.com/auth/spreadsheets"]
-    )
+    creds, _ = default(scopes=["https://www.googleapis.com/auth/spreadsheets"])
     return gspread.authorize(creds)
 
 
