@@ -27,9 +27,17 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: gcr.io/${{ secrets.GCP_PROJECT }}/cafe-agent:latest
+          tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
+
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v1
         with:
           service: cafe-agent
-          image: gcr.io/${{ secrets.GCP_PROJECT }}/cafe-agent:latest
+          image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
+          region: ${{ secrets.GCP_REGION }}
+          env_vars: |
+            TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
+            GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}
+            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          allow_unauthenticated: true
