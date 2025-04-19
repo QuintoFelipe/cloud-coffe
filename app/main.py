@@ -1,7 +1,7 @@
 import logging
 import os
 
-# ⚠️ Escribir el archivo de credenciales si está en el entorno
+# ⚠️ Escribir el archivo de credenciales si está en el entorno quinto
 if "GCP_SA_JSON" in os.environ:
     with open("/tmp/sa.json", "w") as f:
         f.write(os.environ["GCP_SA_JSON"])
