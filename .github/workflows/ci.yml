@@ -48,6 +48,5 @@ jobs:
           env_vars: |
             TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
             GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}
-            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           allow_unauthenticated: true
