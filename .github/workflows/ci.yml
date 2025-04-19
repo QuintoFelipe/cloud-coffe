@@ -49,7 +49,6 @@ jobs:
           push: true
           tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
 
-      # ✅ ONLY keep this one – decoding the base64 version
       - name: Create /tmp/sa.json from base64 secret
         run: echo "$GCP_SA_KEY_BASE64" | base64 -d > /tmp/sa.json
         env:
