@@ -3,7 +3,10 @@ from pydantic import BaseModel
 from telegram.ext import Application
 from app.agents.coordinator import coordinator_agent
 from app.bot.telegram import get_bot_app
+import logging
 
+
+logger = logging.getLogger(__name__) 
 router = APIRouter()
 
 class TelegramUpdate(BaseModel):
@@ -18,6 +21,9 @@ async def webhook(
     chat = update.message.get("chat", {})
     chat_id = chat.get("id")
     text = update.message.get("text")
+
+    logger.info(f"📩 Incoming message from {chat_id}: {text}")  # 👈 Optional, logs input
+
     if not chat_id or not text:
         return {"status": "ignored"}
     try:
@@ -25,4 +31,5 @@ async def webhook(
         await app.bot.send_message(chat_id, response)
         return {"status": "ok"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("❌ Exception during webhook handling")  # 👈 THIS is the key
+        raise HTTPException(status_code=500, detail="Internal Server Error")
