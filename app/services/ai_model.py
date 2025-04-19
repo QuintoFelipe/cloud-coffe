@@ -1,5 +1,5 @@
 import asyncio
-from google.cloud import aiplatform
+from vertexai.preview.generative_models import GenerativeModel
 from app.config import settings
 
 _model = None
@@ -7,8 +7,7 @@ _model = None
 def get_gemini_model():
     global _model
     if _model is None:
-        aiplatform.init()
-        _model = aiplatform.TextGenerationModel.from_pretrained("gemini-2.0-flash")
+        _model = GenerativeModel("gemini-1.5-flash")
     return _model
 
 async def classify_intent(text: str) -> str:
@@ -16,5 +15,5 @@ async def classify_intent(text: str) -> str:
         "Classify the user intent into one of: ORDER, INVENTORY, OTHER.\n"
         f"User: {text}\nIntent:"
     )
-    resp = get_gemini_model().predict(prompt=prompt, max_output_tokens=10)
-    return resp.text.strip().upper()
+    response = get_gemini_model().generate_content(prompt)
+    return response.text.strip().upper()
