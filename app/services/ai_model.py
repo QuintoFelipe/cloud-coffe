@@ -28,7 +28,7 @@ async def classify_intent(text: str) -> str:
     try:
         logger.info(f"[Gemini Request] Prompt: {prompt}")
         response = await model.generate_content_async(prompt)
-        intent = response.text.strip().upper()
+        intent = response.text.strip().upper().replace("INTENT:", "").replace(".", "").strip()
         logger.info(f"[Gemini Response] Intent: {intent}")
         return intent if intent in {"ORDER", "INVENTORY", "OTHER"} else "OTHER"
     except Exception as e:
