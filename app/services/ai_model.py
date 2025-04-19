@@ -1,12 +1,18 @@
 import asyncio
 from vertexai.preview.generative_models import GenerativeModel
 from app.config import settings
+from vertexai import init
+import os
 
 _model = None
 
 def get_gemini_model():
     global _model
     if _model is None:
+        init(
+            project=os.getenv("GCP_PROJECT"),  # Add this to your secrets
+            location="us-central1"
+        )
         _model = GenerativeModel("gemini-1.5-flash")
     return _model
 
