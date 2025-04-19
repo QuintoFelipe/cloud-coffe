@@ -64,4 +64,4 @@ jobs:
             GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             GCP_PROJECT=${{ secrets.GCP_PROJECT }}
-            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
+            GCP_SA_JSON=${{ secrets.GCP_SA_KEY }}
