@@ -1,4 +1,12 @@
 import logging
+import os
+
+# ⚠️ Escribir el archivo de credenciales si está en el entorno
+if "GCP_SA_JSON" in os.environ:
+    with open("/tmp/sa.json", "w") as f:
+        f.write(os.environ["GCP_SA_JSON"])
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/tmp/sa.json"
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
