@@ -10,10 +10,6 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY . .
 
-# 👇 Agrega esta línea para permitir acceso a tu service account JSON
-COPY sa.json /tmp/sa.json
-ENV GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
-
 ENV PORT=8080
 EXPOSE 8080
 
