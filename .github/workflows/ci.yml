@@ -9,23 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
       - name: Setup Python
         uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
+        with: { python-version: '3.10' }
       - name: Install dependencies
         run: pip install -r requirements.txt
-
       - name: Set dummy env vars for tests
         run: |
-          echo "GCP_PROJECT=test-project" >> $GITHUB_ENV
-          echo "TELEGRAM_TOKEN=test-token" >> $GITHUB_ENV
-          echo "GOOGLE_SHEET_ID=test-sheet-id" >> $GITHUB_ENV
-          echo "GOOGLE_APPLICATION_CREDENTIALS=test.json" >> $GITHUB_ENV
-          echo "GEMINI_API_KEY=test-key" >> $GITHUB_ENV
-
+          echo "GCP_PROJECT=test"       >> $GITHUB_ENV
+          echo "TELEGRAM_TOKEN=tok"     >> $GITHUB_ENV
+          echo "GOOGLE_SHEET_ID=sheetid" >> $GITHUB_ENV
+          echo "GEMINI_API_KEY=key"      >> $GITHUB_ENV
       - name: Run tests
         run: PYTHONPATH=. pytest --maxfail=1 --disable-warnings -q
 
@@ -35,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
@@ -43,7 +37,7 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
-      - name: Build & Push Docker image
+      - name: Build & Push image
         uses: docker/build-push-action@v3
         with:
           push: true
