@@ -9,17 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Setup Python
         uses: actions/setup-python@v4
-        with: { python-version: '3.10' }
+        with:
+          python-version: '3.10'
+
       - name: Install dependencies
         run: pip install -r requirements.txt
+
       - name: Set dummy env vars for tests
         run: |
-          echo "GCP_PROJECT=test-project" >> $GITHUB_ENV
-          echo "TELEGRAM_TOKEN=test-token" >> $GITHUB_ENV
-          echo "GOOGLE_SHEET_ID=test-sheet-id" >> $GITHUB_ENV
-          echo "GEMINI_API_KEY=test-key"    >> $GITHUB_ENV
+          echo "GCP_PROJECT=test-project"           >> $GITHUB_ENV
+          echo "TELEGRAM_TOKEN=test-token"          >> $GITHUB_ENV
+          echo "GOOGLE_SHEET_ID=test-sheet-id"      >> $GITHUB_ENV
+          echo "GEMINI_API_KEY=test-key"            >> $GITHUB_ENV
+
       - name: Run tests
         run: PYTHONPATH=. pytest --maxfail=1 --disable-warnings -q
 
@@ -29,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
@@ -44,15 +49,16 @@ jobs:
           tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
 
       - name: Deploy to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v1
-        with:
-          service: cafe-agent
-          image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
-          region: ${{ secrets.GCP_REGION }}
-          # make sure this SA has Vertex AI roles
-          service_account: ${{ secrets.CLOUD_RUN_SA_EMAIL }}
-          env_vars: |
-            TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
-            GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-            GCP_PROJECT=${{ secrets.GCP_PROJECT }}
+        run: |
+          gcloud run deploy cafe-agent \
+            --project=${{ secrets.GCP_PROJECT }} \
+            --region=${{ secrets.GCP_REGION }} \
+            --image=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest \
+            --service-account=${{ secrets.CLOUD_RUN_SA_EMAIL }} \
+            --set-secrets="/tmp/sa.json=cafe-agent-sa:latest" \
+            --update-env-vars=\
+              TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }},\
+              GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }},\
+              GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},\
+              GCP_PROJECT=${{ secrets.GCP_PROJECT }},\
+              GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
