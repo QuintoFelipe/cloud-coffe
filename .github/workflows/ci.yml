@@ -49,12 +49,12 @@ jobs:
           push: true
           tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
 
-      - name: Write raw service account JSON
+      - name: Write raw service account JSON to root for Docker
         run: |
-          mkdir -p app
-          printf "%s" "$GCP_SA_KEY" > app/sa.json
+          printf "%s" "$GCP_SA_KEY" > sa.json
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v1
