@@ -20,7 +20,6 @@ jobs:
           echo "GCP_PROJECT=test-project" >> $GITHUB_ENV
           echo "TELEGRAM_TOKEN=test-token" >> $GITHUB_ENV
           echo "GOOGLE_SHEET_ID=test-sheet-id" >> $GITHUB_ENV
-          echo "GOOGLE_APPLICATION_CREDENTIALS=test.json" >> $GITHUB_ENV
           echo "GEMINI_API_KEY=test-key" >> $GITHUB_ENV
       - name: Run tests
         run: PYTHONPATH=. pytest --maxfail=1 --disable-warnings -q
@@ -31,8 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # allow gcloud to push your container
-      - name: Authenticate to Google Cloud
+      - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
@@ -40,7 +38,7 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
-      - name: Build & Push Docker image
+      - name: Build & Push
         uses: docker/build-push-action@v3
         with:
           push: true
