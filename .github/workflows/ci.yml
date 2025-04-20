@@ -40,7 +40,7 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Configure Docker
+      - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
       - name: Build & Push Docker image
@@ -49,20 +49,16 @@ jobs:
           push: true
           tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
 
-      - name: Write raw service account JSON to root for Docker
-        run: |
-          printf "%s" "$GCP_SA_KEY" > sa.json
-
-      - name: Deploy to Cloud Run
+      - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v1
         with:
           service: cafe-agent
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
           region: ${{ secrets.GCP_REGION }}
+          service_account: ${{ secrets.CLOUD_RUN_SA_EMAIL }}
+          allow_unauthenticated: true
           env_vars: |
             TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
             GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             GCP_PROJECT=${{ secrets.GCP_PROJECT }}
-            GCP_SA_JSON=${{ secrets.GCP_SA_KEY }}
-            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json

@@ -1,7 +1,6 @@
 from vertexai.preview.generative_models import GenerativeModel
-from app.config import settings
 from vertexai import init
-import os
+from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,6 +9,7 @@ _model = None
 def get_gemini_model() -> GenerativeModel:
     global _model
     if _model is None:
+        # Vertex AI will pick up Cloud Run's Workload Identity automatically
         init(
             project=settings.GCP_PROJECT,
             location="us-central1"
@@ -28,7 +28,6 @@ async def classify_intent(text: str) -> str:
         logger.info(f"[Gemini Request] Prompt: {prompt}")
         response = await model.generate_content_async(prompt)
         intent = response.text.strip().upper()
-        logger.info(f"[Gemini Response] Raw: {response.text.strip()}")
         logger.info(f"[Gemini Response] Final Intent: {intent}")
         return intent if intent in {"ORDER", "INVENTORY", "OTHER"} else "OTHER"
     except Exception as e:
