@@ -1,4 +1,5 @@
 name: CI/CD
+
 on:
   push:
     branches: [ main ]
@@ -8,15 +9,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with: { python-version: '3.10' }
-      - run: pip install -r requirements.txt
-      - run: |
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Set dummy env vars for tests
+        run: |
           echo "GCP_PROJECT=test-project" >> $GITHUB_ENV
           echo "TELEGRAM_TOKEN=test-token" >> $GITHUB_ENV
           echo "GOOGLE_SHEET_ID=test-sheet-id" >> $GITHUB_ENV
-          echo "GEMINI_API_KEY=test-key" >> $GITHUB_ENV
-      - run: PYTHONPATH=. pytest --maxfail=1 --disable-warnings -q
+          echo "GEMINI_API_KEY=test-key"    >> $GITHUB_ENV
+      - name: Run tests
+        run: PYTHONPATH=. pytest --maxfail=1 --disable-warnings -q
 
   build-and-deploy:
     needs: lint-and-test
@@ -24,14 +29,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Authenticate to GCP for build & push
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - run: gcloud auth configure-docker us-central1-docker.pkg.dev
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
-      - uses: docker/build-push-action@v3
+      - name: Build & Push Docker image
+        uses: docker/build-push-action@v3
         with:
           push: true
           tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
@@ -42,6 +49,7 @@ jobs:
           service: cafe-agent
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
           region: ${{ secrets.GCP_REGION }}
+          # make sure this SA has Vertex AI roles
           service_account: ${{ secrets.CLOUD_RUN_SA_EMAIL }}
           env_vars: |
             TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
