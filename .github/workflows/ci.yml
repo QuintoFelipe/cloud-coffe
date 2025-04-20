@@ -49,9 +49,9 @@ jobs:
           push: true
           tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
 
-      - name: Write service account JSON to file (safe version)
+      - name: Write raw service account JSON
         run: |
-          echo "$GCP_SA_KEY" > /tmp/sa.json
+          printf "%s" "$GCP_SA_KEY" > sa.json
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
 
