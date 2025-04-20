@@ -1,5 +1,4 @@
 name: CI/CD
-
 on:
   push:
     branches: [ main ]
@@ -9,20 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Set dummy env vars for tests
-        run: |
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.10' }
+      - run: pip install -r requirements.txt
+      - run: |
           echo "GCP_PROJECT=test-project" >> $GITHUB_ENV
           echo "TELEGRAM_TOKEN=test-token" >> $GITHUB_ENV
           echo "GOOGLE_SHEET_ID=test-sheet-id" >> $GITHUB_ENV
           echo "GEMINI_API_KEY=test-key" >> $GITHUB_ENV
-      - name: Run tests
-        run: PYTHONPATH=. pytest --maxfail=1 --disable-warnings -q
+      - run: PYTHONPATH=. pytest --maxfail=1 --disable-warnings -q
 
   build-and-deploy:
     needs: lint-and-test
@@ -30,16 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Authenticate to GCP
+      - name: Authenticate to GCP for build & push
         uses: google-github-actions/auth@v1
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Configure Docker
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+      - run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
-      - name: Build & Push
-        uses: docker/build-push-action@v3
+      - uses: docker/build-push-action@v3
         with:
           push: true
           tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
@@ -50,6 +42,7 @@ jobs:
           service: cafe-agent
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/cafe-agent-repo/cafe-agent:latest
           region: ${{ secrets.GCP_REGION }}
+          service_account: ${{ secrets.CLOUD_RUN_SA_EMAIL }}
           env_vars: |
             TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
             GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}

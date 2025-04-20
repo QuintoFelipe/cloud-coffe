@@ -9,25 +9,23 @@ _model = None
 def get_gemini_model() -> GenerativeModel:
     global _model
     if _model is None:
-        init(
-            project=settings.GCP_PROJECT,
-            location="us-central1"
-        )
+        # ADC on Cloud Run will pick up the service account you assign.
+        init(project=settings.GCP_PROJECT, location="us-central1")
         _model = GenerativeModel("gemini-1.5-flash")
     return _model
 
 async def classify_intent(text: str) -> str:
     prompt = (
         "You are an intent classifier for a coffee assistant.\n"
-        "Return only one of these values: ORDER, INVENTORY, OTHER.\n"
+        "Return only one of: ORDER, INVENTORY, OTHER.\n"
         f"User message: {text}\nIntent:"
     )
     model = get_gemini_model()
     try:
         logger.info(f"[Gemini Request] {prompt}")
-        response = await model.generate_content_async(prompt)
-        intent = response.text.strip().upper()
-        return intent if intent in {"ORDER", "INVENTORY", "OTHER"} else "OTHER"
+        resp = await model.generate_content_async(prompt)
+        intent = resp.text.strip().upper()
+        return intent if intent in {"ORDER","INVENTORY","OTHER"} else "OTHER"
     except Exception as e:
         logger.error(f"[Gemini ERROR] {e}")
         return "OTHER"
