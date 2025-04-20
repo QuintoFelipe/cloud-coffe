@@ -10,7 +10,8 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY . .
 
-COPY sa.json /tmp/sa.json
+COPY app/sa.json /tmp/sa.json
+
 
 ENV PORT=8080
 EXPOSE 8080
