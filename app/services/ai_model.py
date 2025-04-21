@@ -2,6 +2,7 @@ from vertexai.preview.generative_models import GenerativeModel
 from app.config import settings
 from vertexai import init
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 _model = None
@@ -34,3 +35,28 @@ async def classify_intent(text: str) -> str:
     except Exception as e:
         logger.error(f"[Gemini ERROR]: {e}")
         return "OTHER"
+
+async def extract_order_items(text: str) -> list[dict]:
+    """
+    Ask Gemini to output JSON like:
+    [
+      {"product":"mocha","quantity":1},
+      {"product":"latte","quantity":2}
+    ]
+    """
+    prompt = (
+        "Extract all coffee orders from the user's message into a JSON array.\n"
+        "Each element must be an object with keys 'product' and 'quantity' (an integer).\n"
+        "Default quantity to 1 if none is given.\n"
+        "Only include known products: latte, iced-latte, mocha.\n"
+        "Return valid JSON only, no extra explanation.\n"
+        f"User message: \"{text}\"\n"
+        "JSON:"
+    )
+    try:
+        logger.info(f"[Gemini Extraction] {prompt}")
+        resp = await get_gemini_model().generate_content_async(prompt)
+        return json.loads(resp.text)
+    except Exception as e:
+        logger.error(f"[Gemini Extraction ERROR]: {e}")
+        return []
