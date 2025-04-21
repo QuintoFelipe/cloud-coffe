@@ -1,8 +1,9 @@
 import random
 import asyncio
+import re
 from datetime import datetime
 
-from app.utils.fuzzy_match import exact_item_match
+from app.services.ai_model import extract_order_items
 from app.services.sheets import (
     get_recipes,
     get_inventory,
@@ -10,26 +11,37 @@ from app.services.sheets import (
     add_order,
     get_products
 )
-from app.services.ai_model import extract_order_items  # new import
 
 async def order_agent(text: str) -> str:
-    # 1) Ask Gemini to parse out all items
-    items = await extract_order_items(text)
-    # Normalize keys & lowercasing
-    order_items: dict[str, int] = {
-        item['product'].lower(): int(item.get('quantity', 1))
-        for item in items
-    }
+    # 1) LLM extraction (handles any language & spelled‑out numbers)
+    raw_items = await extract_order_items(text)
+    order_items: dict[str, int] = {}
+    for itm in raw_items:
+        prod = itm.get('product', '').lower()
+        qty = int(itm.get('quantity', 1))
+        if prod:
+            order_items[prod] = order_items.get(prod, 0) + qty
+
+    # 2) DIGITS‑ONLY fallback (e.g. "2 latte")
+    if not order_items:
+        recipes = await asyncio.to_thread(get_recipes)
+        product_names = {r['item'].lower() for r in recipes}
+        lowered = text.lower()
+        for prod in product_names:
+            pattern = rf'\b(\d+)\s+{re.escape(prod)}s?\b'
+            for m in re.finditer(pattern, lowered):
+                qty = int(m.group(1))
+                order_items[prod] = order_items.get(prod, 0) + qty
 
     if not order_items:
         return "Sorry, I couldn’t detect any products in your order."
 
-    # 2) Load recipes & inventory
+    # 3) Load recipes & inventory
     recipes = await asyncio.to_thread(get_recipes)
     inv = await asyncio.to_thread(get_inventory)
     inv_map = {row['item'].lower(): row['quantity'] for row in inv}
 
-    # 3) Aggregate required ingredients
+    # 4) Aggregate needed ingredients
     needed_by_ing: dict[str, float] = {}
     for prod, qty in order_items.items():
         reqs = [r for r in recipes if r['item'].lower() == prod]
@@ -40,22 +52,22 @@ async def order_agent(text: str) -> str:
             needed = r['quantity_per_unit'] * qty
             needed_by_ing[ing] = needed_by_ing.get(ing, 0) + needed
 
-    # 4) Stock check
+    # 5) Stock check
     for ing, needed in needed_by_ing.items():
         if inv_map.get(ing, 0) < needed:
             return f"Sorry, not enough {ing} for that order."
 
-    # 5) Pricing map
+    # 6) Pricing map
     products = await asyncio.to_thread(get_products)
     price_map = {p['product'].lower(): p['price_unit_dolars'] for p in products}
 
-    # 6) Commit to Sheets in background
+    # 7) Commit to Sheets in background
     def perform_order_tasks():
         # deduct inventory
         for ing, needed in needed_by_ing.items():
             update_inventory(ing, inv_map[ing] - needed)
 
-        # shared order ID & timestamp
+        # single shared order ID & timestamp
         order_id = f"#{random.randint(1000,9999)}"
         timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -68,7 +80,7 @@ async def order_agent(text: str) -> str:
 
     order_id = await asyncio.to_thread(perform_order_tasks)
 
-    # 7) Build the user response
+    # 8) Build and return response
     lines = []
     grand_total = 0.0
     for prod, qty in order_items.items():
