@@ -39,21 +39,17 @@ async def classify_intent(text: str) -> str:
 async def extract_order_items(text: str) -> list[dict]:
     """
     Ask Gemini to output JSON like:
-    [
-      {"product":"mocha","quantity":1},
-      {"product":"latte","quantity":2}
-    ]
-    Understand any language: convert spelled‑out numbers in ANY language to integers.
+      [ {"product":"mocha","quantity":1}, {"product":"latte","quantity":2} ]
+    It may wrap it with extra newlines or stray characters—this will
+    pull out the first [...] block and json.loads it.
     """
     prompt = (
         "Extract all coffee orders from the user's message into a JSON array.\n"
         "Each element must be an object with keys 'product' and 'quantity' (an integer).\n"
         "Default quantity to 1 if none is given.\n"
         "Only include known products: latte, iced-latte, mocha.\n"
-        "The message may be in any language (Spanish, French, German, Chinese, etc.)\n"
-        "and may contain spelled‑out numbers (e.g. 'dos', 'deux', 'zwei', '二').\n"
-        "You MUST convert those to digits.\n"
-        "Return valid JSON only, no extra text.\n"
+        "The message may be in any language and contain spelled‑out numbers.\n"
+        "Return valid JSON only (no extra text).\n"
         "\n"
         "Example:\n"
         "User message: \"Quiero un mocha y dos latte\"\n"
@@ -69,9 +65,11 @@ async def extract_order_items(text: str) -> list[dict]:
     try:
         logger.info(f"[Gemini Extraction] {prompt}")
         resp = await get_gemini_model().generate_content_async(prompt)
-        items = json.loads(resp.text)
-        if isinstance(items, list):
-            return items
+        raw = resp.text.strip()
+        # extract the first JSON array block
+        match = re.search(r'(\[.*\])', raw, re.DOTALL)
+        if match:
+            return json.loads(match.group(1))
     except Exception as e:
         logger.error(f"[Gemini Extraction ERROR]: {e}")
     return []
