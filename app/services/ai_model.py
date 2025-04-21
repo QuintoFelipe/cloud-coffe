@@ -3,6 +3,7 @@ from app.config import settings
 from vertexai import init
 import logging
 import json
+import re
 
 logger = logging.getLogger(__name__)
 _model = None
