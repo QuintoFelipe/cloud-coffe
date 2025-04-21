@@ -1,30 +1,31 @@
 import gspread
 from google.oauth2.service_account import Credentials
 from app.config import settings
-from google.auth import default  # ✅ use default GCP credentials
+from google.auth import default  
 
 def get_sheets_client():
     creds, _ = default(scopes=["https://www.googleapis.com/auth/spreadsheets"])
     return gspread.authorize(creds)
-
 
 def get_inventory() -> list[dict]:
     client = get_sheets_client()
     sheet = client.open_by_key(settings.GOOGLE_SHEET_ID)
     return sheet.worksheet("Inventory").get_all_records()
 
-
 def get_recipes() -> list[dict]:
     client = get_sheets_client()
     sheet = client.open_by_key(settings.GOOGLE_SHEET_ID)
     return sheet.worksheet("Recipes").get_all_records()
 
+def get_products() -> list[dict]:
+    client = get_sheets_client()
+    sheet = client.open_by_key(settings.GOOGLE_SHEET_ID)
+    return sheet.worksheet("Products").get_all_records()
 
-def add_order(order_id: str, product: str, timestamp: str):
+def add_order(order_id: str, product: str, timestamp: str, quantity: int, total_price: float):
     client = get_sheets_client()
     ws = client.open_by_key(settings.GOOGLE_SHEET_ID).worksheet("Orders")
-    ws.append_row([order_id, product, timestamp])
-
+    ws.append_row([order_id, product, timestamp, quantity, total_price])
 
 def update_inventory(item: str, new_quantity: float):
     if new_quantity < 0:
