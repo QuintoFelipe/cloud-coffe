@@ -74,3 +74,33 @@ async def extract_order_items(text: str) -> list[dict]:
     except Exception as e:
         logger.error(f"[Gemini Extraction ERROR]: {e}")
     return []
+
+
+async def extract_inventory_items(text: str, known_products: list[str]) -> list[str]:
+    """
+    Given a list of known products (exact English names),
+    ask Gemini to extract which ones the user mentions—
+    in any language. Returns that subset as a JSON array.
+    """
+    products_str = ", ".join(known_products)
+    prompt = (
+        "You are a helper for a global, multi‑language coffee assistant.\n"
+        "The user asks about inventory in any language (English, Spanish, German, Chinese, etc.).\n"
+        f"Known products (exact match list): {products_str}.\n"
+        "Extract and return a JSON array of the EXACT product names mentioned.\n"
+        "Return ONLY valid JSON—no extra text.\n"
+        f"User message: \"{text}\"\n"
+        "JSON:"
+    )
+    try:
+        logger.info(f"[Gemini Inventory Extraction] {prompt}")
+        resp = await get_gemini_model().generate_content_async(prompt)
+        raw = resp.text.strip()
+        match = re.search(r'(\[.*\])', raw, re.DOTALL)
+        if match:
+            items = json.loads(match.group(1))
+            # Ensure they’re actual known products
+            return [i for i in items if i in known_products]
+    except Exception as e:
+        logger.error(f"[Gemini Inventory Extraction ERROR]: {e}")
+    return []
