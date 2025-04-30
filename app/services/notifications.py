@@ -4,15 +4,14 @@ from app.services.sheets import get_inventory
 
 log   = logging.getLogger(__name__)
 _lock = threading.Lock()
+_last_alert_by_chat: dict[str, str] = {}   # key is *string* chat_id
 
-# stores the *exact* alert text that is either in-flight or already sent
-_last_alert_by_chat: dict[int, str] = {}
+def send_low_stock_alert(chat_id: int | str):
+    """Send ONE low-stock alert per chat; suppress exact duplicates."""
+    chat_key = str(chat_id)                # ← normalise
 
-def send_low_stock_alert(chat_id: int):
-    """Send ONE low-stock alert to chat_id; suppress duplicates even
-       when multiple threads call us at the same moment."""
-    inv  = get_inventory()
-    low  = [
+    inv = get_inventory()
+    low = [
         r for r in inv
         if r.get("minimum_level") is not None
         and r["quantity"] <= r["minimum_level"]
@@ -26,26 +25,23 @@ def send_low_stock_alert(chat_id: int):
         for r in low
     )
 
-    # ---------- critical section ----------
     with _lock:
-        if _last_alert_by_chat.get(chat_id) == text:
+        if _last_alert_by_chat.get(chat_key) == text:
             log.info("duplicate low-stock alert suppressed")
             return
-        # reserve it *before* sending so any parallel call sees it
-        _last_alert_by_chat[chat_id] = text
-    # --------------------------------------
+        _last_alert_by_chat[chat_key] = text   # reserve before send
 
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_TOKEN}/sendMessage"
     try:
-        r = requests.post(url, data={"chat_id": chat_id, "text": text}, timeout=5)
-        if r.status_code == 200:
+        resp = requests.post(url, data={"chat_id": chat_key, "text": text}, timeout=5)
+        if resp.status_code == 200:
             log.info("low-stock alert sent")
-            return
-        # If telegram returned an error, roll back the reservation
-        log.error(f"Telegram error {r.status_code}: {r.text}")
+        else:
+            log.error(f"Telegram error {resp.status_code}: {resp.text}")
+            # roll back reservation on failure
+            with _lock:
+                _last_alert_by_chat.pop(chat_key, None)
     except Exception as e:
-        log.error(f"HTTP request failed while sending alert: {e}")
-
-    # we get here only on failure ➜ allow another attempt later
-    with _lock:
-        _last_alert_by_chat.pop(chat_id, None)
+        log.error(f"HTTP request failed: {e}")
+        with _lock:
+            _last_alert_by_chat.pop(chat_key, None)

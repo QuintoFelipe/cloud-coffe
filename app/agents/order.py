@@ -84,19 +84,15 @@ async def order_agent(text: str, chat_id: str) -> str:
 
     order_id = await asyncio.to_thread(perform_order_tasks)
 
-    try:
-        cid = int(chat_id)
-    except ValueError:
-        logger.error(f"order_agent: invalid chat_id for alert: {chat_id}")
-    else:
-        logger.info(f"order_agent: scheduling low-stock alert to chat {cid}")
-        # run in background
-        asyncio.create_task(
-            asyncio.to_thread(send_low_stock_alert, cid)
-        )
+   # 8) After a successful order, trigger low-stock alert if needed
+   # Always pass the chat_id as a string key
+    cid_str = str(chat_id)
+    logger.info(f"order_agent: scheduling low-stock alert to chat {cid_str}")
+    # run in background
+    asyncio.create_task(
+        asyncio.to_thread(send_low_stock_alert, cid_str)
+    )
 
-    # 8) After a successful order, trigger low-stock alert if needed
-    asyncio.create_task(asyncio.to_thread(send_low_stock_alert,chat_id))
 
     # 9) Build and return response
     lines = []
