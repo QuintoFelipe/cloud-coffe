@@ -11,6 +11,9 @@ from app.services.sheets import (
     add_order,
     get_products
 )
+from app.services.notifications import send_low_stock_alert 
+
+
 
 async def order_agent(text: str) -> str:
     # 1) LLM extraction (handles any language & spelled‑out numbers)
@@ -80,7 +83,10 @@ async def order_agent(text: str) -> str:
 
     order_id = await asyncio.to_thread(perform_order_tasks)
 
-    # 8) Build and return response
+    # 8) After a successful order, trigger low-stock alert if needed
+    asyncio.create_task(asyncio.to_thread(send_low_stock_alert))
+
+    # 9) Build and return response
     lines = []
     grand_total = 0.0
     for prod, qty in order_items.items():
