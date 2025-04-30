@@ -5,12 +5,14 @@ from app.services.sheets import get_inventory
 
 log = logging.getLogger(__name__)
 
+# store last alert per-chat so we don’t spam duplicates
+_last_alert_by_chat: dict[int, str] = {}
+
 def send_low_stock_alert(chat_id: int):
     """
-    Check inventory; if any item.quantity <= minimum_level,
-    send an alert into the given chat_id via a blocking HTTP request.
+    If any item is <= its minimum level, send ONE alert message into
+    `chat_id`.  Suppress duplicates of the exact same alert text.
     """
-    log.info(f"send_low_stock_alert: called for chat_id={chat_id}")
     inv = get_inventory()
     low = [
         r for r in inv
@@ -18,26 +20,26 @@ def send_low_stock_alert(chat_id: int):
         and r["quantity"] <= r["minimum_level"]
     ]
     if not low:
-        log.info("send_low_stock_alert: no items below minimum, exiting")
         return
 
-    lines = [
+    text = "\n".join(
         f"⚠️ Low stock: {r['item']} {r['quantity']}{r.get('unit','')} "
         f"(min {r['minimum_level']}{r.get('unit','')})"
         for r in low
-    ]
-    text = "\n".join(lines)
+    )
+
+    # Dedup: if we already sent this exact text to this chat, skip
+    if _last_alert_by_chat.get(chat_id) == text:
+        log.info("send_low_stock_alert: duplicate alert suppressed")
+        return
 
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text}
-
     try:
-        resp = requests.post(url, data=payload, timeout=5)
-        if resp.status_code != 200:
-            log.error(
-                f"send_low_stock_alert: Telegram API returned {resp.status_code}: {resp.text}"
-            )
+        resp = requests.post(url, data={"chat_id": chat_id, "text": text}, timeout=5)
+        if resp.status_code == 200:
+            _last_alert_by_chat[chat_id] = text          # remember what we sent
+            log.info("send_low_stock_alert: alert sent")
         else:
-            log.info("send_low_stock_alert: message sent via HTTP")
+            log.error(f"Telegram API error {resp.status_code}: {resp.text}")
     except Exception as e:
-        log.error(f"send_low_stock_alert: HTTP request failed: {e}")
+        log.error(f"HTTP request failed while sending alert: {e}")
