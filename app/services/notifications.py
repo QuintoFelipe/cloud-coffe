@@ -1,12 +1,13 @@
 import logging
-import requests
+import requests, threading
 from app.config import settings
 from app.services.sheets import get_inventory
 
 log = logging.getLogger(__name__)
 
-# store last alert per-chat so we don’t spam duplicates
+
 _last_alert_by_chat: dict[int, str] = {}
+_lock = threading.Lock()  
 
 def send_low_stock_alert(chat_id: int):
     """
@@ -27,6 +28,14 @@ def send_low_stock_alert(chat_id: int):
         f"(min {r['minimum_level']}{r.get('unit','')})"
         for r in low
     )
+
+    with _lock:                                 
+        if _last_alert_by_chat.get(chat_id) == text:  
+            log.info("duplicate low-stock alert suppressed")          
+            return                                                    
+        _last_alert_by_chat[chat_id] = text      
+
+
 
     # Dedup: if we already sent this exact text to this chat, skip
     if _last_alert_by_chat.get(chat_id) == text:
