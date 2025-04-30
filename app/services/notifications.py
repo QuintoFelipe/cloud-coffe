@@ -16,6 +16,7 @@ def send_low_stock_alert(chat_id: str):
         if r.get("minimum_level") is not None and r["quantity"] <= r["minimum_level"]
     ]
     if not low:
+        log.info("send_low_stock_alert: no items below minimum, exiting")
         return
 
     lines = [
@@ -25,6 +26,8 @@ def send_low_stock_alert(chat_id: str):
     ]
     text = "\n".join(lines)
     try:
+        log.info(f"send_low_stock_alert: sending alert to {chat_id}")
         Bot(token=settings.TELEGRAM_TOKEN).send_message(chat_id=chat_id, text=text)
+        log.info("send_low_stock_alert: message sent")
     except Exception as e:
-        log.error(f"Failed to send low-stock alert to {chat_id}: {e}")
+        log.error(f"send_low_stock_alert: failed to send to {chat_id}: {e}")
