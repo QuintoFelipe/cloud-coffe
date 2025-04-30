@@ -6,7 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def coordinator_agent(text: str) -> str:
+async def coordinator_agent(text: str, chat_id: str) -> str:
     """
     Routes user messages to the right agent based on Gemini intent:
       • ORDER     → order_agent
@@ -20,7 +20,7 @@ async def coordinator_agent(text: str) -> str:
 
     # 2) Dispatch to the right agent
     if intent == "ORDER":
-        return await order_agent(text)
+        return await order_agent(text, chat_id)
     if intent == "INVENTORY":
         return await inventory_agent(text)
     if intent == "PRODUCTS":

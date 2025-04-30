@@ -27,7 +27,8 @@ async def webhook(
     if not chat_id or not text:
         return {"status": "ignored"}
     try:
-        response = await coordinator_agent(text)
+         # forward chat_id so order_agent can send low-stock alerts back here
+        response = await coordinator_agent(text, str(chat_id))
         await app.bot.send_message(chat_id, response)
         return {"status": "ok"}
     except Exception as e:
