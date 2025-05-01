@@ -24,6 +24,7 @@ jobs:
           echo "TELEGRAM_TOKEN=test-token"          >> $GITHUB_ENV
           echo "GOOGLE_SHEET_ID=test-sheet-id"      >> $GITHUB_ENV
           echo "GEMINI_API_KEY=test-key"            >> $GITHUB_ENV
+          echo "OWM_API_KEY=test-weather-key"       >> $GITHUB_ENV
 
       - name: Run tests
         run: PYTHONPATH=. pytest --maxfail=1 --disable-warnings -q
@@ -66,4 +67,5 @@ jobs:
             GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             GCP_PROJECT=${{ secrets.GCP_PROJECT }}
+            OWM_API_KEY=${{ secrets.OWM_API_KEY }}
             GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
