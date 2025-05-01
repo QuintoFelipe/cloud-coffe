@@ -13,7 +13,7 @@ from app.services.sheets import (
     get_products
 )
 from app.services.notifications import send_low_stock_alert 
-
+from app.services.weather import get_medellin_weather
 
 
 async def order_agent(text: str, chat_id: str) -> str:
@@ -75,10 +75,17 @@ async def order_agent(text: str, chat_id: str) -> str:
         order_id = f"#{random.randint(1000,9999)}"
         timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
+        # weather info
+        try:
+            weather = get_medellin_weather()
+        # add order to sheet
+        except Exception:
+            weather = "N/A"
+
         # one row per line‑item
         for prod, qty in order_items.items():
             total_price = price_map.get(prod, 0) * qty
-            add_order(order_id, prod, timestamp, qty, total_price)
+            add_order(order_id, prod, timestamp, qty, total_price, weather)
 
         return order_id
 

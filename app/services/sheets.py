@@ -22,10 +22,10 @@ def get_products() -> list[dict]:
     sheet = client.open_by_key(settings.GOOGLE_SHEET_ID)
     return sheet.worksheet("Products").get_all_records()
 
-def add_order(order_id: str, product: str, timestamp: str, quantity: int, total_price: float):
+def add_order(order_id: str, product: str, timestamp: str, quantity: int, total_price: float, weather: str):
     client = get_sheets_client()
     ws = client.open_by_key(settings.GOOGLE_SHEET_ID).worksheet("Orders")
-    ws.append_row([order_id, product, timestamp, quantity, total_price])
+    ws.append_row([order_id, product, timestamp, quantity, total_price, weather])
 
 def update_inventory(item: str, new_quantity: float):
     if new_quantity < 0:
@@ -34,3 +34,4 @@ def update_inventory(item: str, new_quantity: float):
     ws = client.open_by_key(settings.GOOGLE_SHEET_ID).worksheet("Inventory")
     cell = ws.find(item)
     ws.update_cell(cell.row, 2, new_quantity)
+

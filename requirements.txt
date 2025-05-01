@@ -7,3 +7,4 @@ google-auth-oauthlib==1.0.0
 google-cloud-aiplatform[preview]>=1.43.0
 pydantic==1.10.7
 pytest==7.0.0 
+requests>=2.28.0
