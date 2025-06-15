@@ -20,17 +20,8 @@ A multi-language Telegram chatbot for ordering coffee, tracking inventory, and s
 
 ## 🧩 Architecture
 
-```text
-User (Telegram)  ↔  FastAPI + python-telegram-bot
-      ↕                      ↕
-  order_agent      ←→  Google Sheets (Orders, Inventory, Products, Recipes)
-      ↕                      ↕
-send_low_stock_alert         ↕
-      ↕                     OpenWeatherMap API
-BigQuery Data Transfer
-      ↓
- BigQuery Tables → Looker Dashboard
-```
+![Untitled-2025-06-14-1953](https://github.com/user-attachments/assets/02055d91-860d-4d65-8b63-e324abe386ad)
+
 
 ---
 
